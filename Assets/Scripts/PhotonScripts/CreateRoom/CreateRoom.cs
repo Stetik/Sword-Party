@@ -1,10 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Photon.Pun;
-using UnityEngine.SceneManagement;
-using Photon.Realtime;
 using UnityEngine.UI;
+using Photon.Pun;
+using Photon.Realtime;
+
+
 
 public class CreateRoom : MonoBehaviourPunCallbacks
 {
@@ -18,6 +17,12 @@ public class CreateRoom : MonoBehaviourPunCallbacks
         createButton.onClick.AddListener(CreateNewRoom);
         joinButton.onClick.AddListener(JoinNewRoom);
     }
+
+    private void OnDestroy()
+    {
+        createButton.onClick.RemoveAllListeners();
+        joinButton.onClick.RemoveAllListeners();
+    }
     private void CreateNewRoom()
     {
         RoomOptions roomconfiguration = new RoomOptions();
@@ -27,6 +32,11 @@ public class CreateRoom : MonoBehaviourPunCallbacks
     private void JoinNewRoom()
     {
         PhotonNetwork.JoinRoom(joinInput.text);
+    }
+
+    public override void OnJoinedRoom()
+    {
+        PhotonNetwork.LoadLevel("Gameplay");
     }
 
 }
