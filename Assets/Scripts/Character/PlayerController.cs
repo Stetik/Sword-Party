@@ -5,6 +5,9 @@ using Photon.Pun;
 
 public class PlayerController : MonoBehaviour
 {
+    [SerializeField]
+    public int speed;
+
     private PhotonView pv;
 
     private void Awake()
@@ -26,11 +29,11 @@ public class PlayerController : MonoBehaviour
             }
             if (Input.GetKey(KeyCode.A))
             {
-                transform.position += -Vector3.right * 5 * Time.deltaTime;
+                transform.position += -Vector3.right * speed * Time.deltaTime;
             }
             if (Input.GetKey(KeyCode.D))
             {
-                transform.position += Vector3.right * 5 * Time.deltaTime;
+                transform.position += Vector3.right * speed * Time.deltaTime;
             }
 
         }
