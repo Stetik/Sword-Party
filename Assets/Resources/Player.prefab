@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1150325395601531712
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 527847964792419694}
+  m_Layer: 0
+  m_Name: groundCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &527847964792419694
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1150325395601531712}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.01, y: -1.005, z: 0.0005051237}
+  m_LocalScale: {x: 1.6049902, y: 1.577001, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5832907710764390351}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2116608004607199310
 GameObject:
   m_ObjectHideFlags: 0
@@ -31,11 +62,12 @@ Transform:
   m_GameObject: {fileID: 2116608004607199310}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.4777, y: 1.212, z: 0}
-  m_LocalScale: {x: 0.62305677, y: 0.63411504, z: 1}
+  m_LocalPosition: {x: -3.4777, y: 1.0778, z: 0}
+  m_LocalScale: {x: 0.62305677, y: 0.49993628, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5074707235285600180}
+  - {fileID: 527847964792419694}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &5449022327208673258
@@ -158,7 +190,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0f0cb2eafb8fd34488182e6157cb9b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 4
+  speed: 5
+  JumpForce: 15
+  rb: {fileID: -1005193684534547767}
+  groundCheck: {fileID: 527847964792419694}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 64
 --- !u!50 &-1005193684534547767
 Rigidbody2D:
   serializedVersion: 4
@@ -174,7 +212,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDrag: 0
   m_AngularDrag: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 4
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -182,9 +220,9 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_Interpolate: 1
+  m_SleepingMode: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!70 &2439341176805752316
 CapsuleCollider2D:
@@ -195,7 +233,7 @@ CapsuleCollider2D:
   m_GameObject: {fileID: 2116608004607199310}
   m_Enabled: 1
   m_Density: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 2b81372357cd6db4aadd305a2cf09fe6, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
