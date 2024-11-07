@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 public class PlayerController : MonoBehaviour
 {
-    // Start Movement variables
+    // Movement variables
     [SerializeField] public int speed;
     [SerializeField] public int JumpForce;
     [SerializeField] private Rigidbody2D rb;
@@ -21,17 +21,22 @@ public class PlayerController : MonoBehaviour
     private float dashingPower = 24f;
     private float dashingTime = 0.2f;
     private float dashingCooldown = 1f;
-    // End Movement variables
 
-    // Start Attack Variables
+    // Attack variables
     public Transform attackPoint;
     public float attackRange = 0.5f;
     public LayerMask EnemyLayers;
-    // End Attack Variables
+    private int normalDamage = 1;      // Normal attack damage
+    private int chargedDamage = 2;     // Charged attack damage
+    private bool isCharging = false;   // Tracks if the player is charging an attack
+    private float chargeTime = 1.0f;   // Time required for a full charge
+    private float chargeStartTime;
 
-    // Health and Damage variables
+    // Defense variables
+    private bool isDefending = false;  // Tracks if the player is in defense mode
+
+    // Health and damage variables
     private int health = 3; // Each player starts with 3 health points
-    private int damage = 1; // Each attack deals 1 damage point
 
     private PhotonView pv;
 
@@ -44,9 +49,26 @@ public class PlayerController : MonoBehaviour
     {
         if (pv.IsMine)
         {
+            // Start charging or normal attack
             if (Input.GetKeyDown(KeyCode.Mouse0))
             {
-                Attack();
+                StartCharging();
+            }
+
+            // Release attack (either normal or charged)
+            if (Input.GetKeyUp(KeyCode.Mouse0))
+            {
+                ReleaseAttack();
+            }
+
+            // Defense mode
+            if (Input.GetKeyDown(KeyCode.Mouse1))
+            {
+                isDefending = true;
+            }
+            if (Input.GetKeyUp(KeyCode.Mouse1))
+            {
+                isDefending = false;
             }
 
             if (isDashing)
@@ -54,6 +76,7 @@ public class PlayerController : MonoBehaviour
                 return;
             }
 
+            // Movement logic
             horizontal = Input.GetAxisRaw("Horizontal");
             rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
 
@@ -105,7 +128,35 @@ public class PlayerController : MonoBehaviour
         canDash = true;
     }
 
-    void Attack()
+    // Start charging for an attack
+    private void StartCharging()
+    {
+        isCharging = true;
+        chargeStartTime = Time.time;
+    }
+
+    // Release attack, performing either a normal or charged attack
+    private void ReleaseAttack()
+    {
+        if (isCharging)
+        {
+            isCharging = false;
+            float elapsedChargeTime = Time.time - chargeStartTime;
+
+            // Check if the charge duration meets or exceeds the required charge time
+            if (elapsedChargeTime >= chargeTime)
+            {
+                Attack(chargedDamage); // Perform a charged attack
+            }
+            else
+            {
+                Attack(normalDamage); // Perform a normal attack
+            }
+        }
+    }
+
+    // Attack method with a damage parameter for normal or charged attacks
+    private void Attack(int damage)
     {
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, EnemyLayers);
 
@@ -113,23 +164,51 @@ public class PlayerController : MonoBehaviour
         {
             // Call TakeDamage on the enemy's PhotonView using RPC
             enemy.GetComponent<PhotonView>().RPC("TakeDamage", RpcTarget.AllBuffered, damage);
-            Debug.Log("We hit " + enemy.name);
+            Debug.Log("We hit " + enemy.name + " with damage: " + damage);
         }
     }
 
     [PunRPC]
     public void TakeDamage(int damageAmount)
     {
-        if (!pv.IsMine) return; 
+        if (!pv.IsMine) return;
+
+        // If player was charging an attack when hit, cancel charge and reduce health
+        if (isCharging)
+        {
+            CancelCharge();
+            health -= 1;  // Penalty for being hit while charging
+            Debug.Log("Charge canceled! Player lost 1 health. Remaining health: " + health);
+        }
+
+        // Check if the player is defending
+        if (isDefending)
+        {
+            if (damageAmount == normalDamage)
+            {
+                Debug.Log("Attack blocked! No damage taken.");
+                return; // Block normal attack, no damage taken
+            }
+            else if (damageAmount == chargedDamage)
+            {
+                damageAmount = 1; // Reduce charged attack damage to 1
+                Debug.Log("Blocked a charged attack! Took reduced damage: 1");
+            }
+        }
 
         health -= damageAmount;
         Debug.Log("Player " + pv.ViewID + " Remaining Health: " + health);
 
         if (health <= 0)
         {
-            
             pv.RPC("Die", RpcTarget.AllBuffered);
         }
+    }
+
+    // Cancels charging without attacking
+    private void CancelCharge()
+    {
+        isCharging = false;
     }
 
     [PunRPC]
