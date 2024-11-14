@@ -46,6 +46,7 @@ GameObject:
   - component: {fileID: 2189509307492323528}
   - component: {fileID: -1005193684534547767}
   - component: {fileID: 2439341176805752316}
+  - component: {fileID: 3905116122142764319}
   m_Layer: 7
   m_Name: Player
   m_TagString: Untagged
@@ -197,6 +198,7 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
+  animator: {fileID: 3905116122142764319}
   attackPoint: {fileID: 617149970522001163}
   attackRange: 0.36
   EnemyLayers:
@@ -264,6 +266,27 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 1, y: 2}
   m_Direction: 0
+--- !u!95 &3905116122142764319
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2116608004607199310}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: ff8cadc47b12dc44f89760d2b1a740b1, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &4302438430425731178
 GameObject:
   m_ObjectHideFlags: 0

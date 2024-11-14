@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private Animator animator;
 
     private float horizontal;
     private bool isFacingRight = true;
@@ -76,6 +77,19 @@ public class PlayerController : MonoBehaviour
                 return;
             }
 
+            // Update animator parameters for animations
+            animator.SetFloat("Speed", Mathf.Abs(horizontal)); // Update Speed for run animation
+
+            // Check if player is grounded to update jump state
+            if (IsGrounded())
+            {
+                animator.SetBool("IsJumping", false); // If grounded, not jumping
+            }
+            else
+            {
+                animator.SetBool("IsJumping", true); // If in air, jumping
+            }
+
             // Movement logic
             horizontal = Input.GetAxisRaw("Horizontal");
             rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
@@ -83,6 +97,7 @@ public class PlayerController : MonoBehaviour
             if (Input.GetButtonDown("Jump") && IsGrounded())
             {
                 rb.velocity = new Vector2(rb.velocity.x, JumpForce);
+                animator.SetBool("IsJumping", true); // Set jumping to true when jump starts
             }
             if (Input.GetButtonUp("Jump") && rb.velocity.y > 0)
             {
