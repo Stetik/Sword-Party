@@ -133,10 +133,16 @@ public class PlayerController : MonoBehaviour
     {
         canDash = false;
         isDashing = true;
+
+        animator.SetBool("IsDashing", true);
+
         float originalGravity = rb.gravityScale;
         rb.gravityScale = 0f;
         rb.velocity = new Vector2(transform.localScale.x * dashingPower, 0f);
         yield return new WaitForSeconds(dashingTime);
+
+        animator.SetBool("IsDashing", false);
+
         rb.gravityScale = originalGravity;
         isDashing = false;
         yield return new WaitForSeconds(dashingCooldown);
