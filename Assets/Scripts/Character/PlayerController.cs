@@ -179,8 +179,13 @@ public class PlayerController : MonoBehaviour
     // Attack method with a damage parameter for normal or charged attacks
     private void Attack(int damage)
     {
+        // Trigger attack animation
+        animator.SetTrigger("Attack");
+
+        // Detect enemies in range of the attack
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, EnemyLayers);
 
+        // Deal damage to enemies
         foreach (Collider2D enemy in hitEnemies)
         {
             // Call TakeDamage on the enemy's PhotonView using RPC
@@ -188,6 +193,7 @@ public class PlayerController : MonoBehaviour
             Debug.Log("We hit " + enemy.name + " with damage: " + damage);
         }
     }
+
 
     [PunRPC]
     public void TakeDamage(int damageAmount)

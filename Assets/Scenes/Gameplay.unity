@@ -264,7 +264,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.08082664, y: 0.014951423}
+  m_Offset: {x: -0.08082664, y: -0.0077353716}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -275,7 +275,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 3.0655663, y: 0.53902256}
+  m_Size: {x: 3.0655663, y: 0.5843961}
   m_EdgeRadius: 0
 --- !u!1 &274106790
 GameObject:
@@ -861,7 +861,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.08082664, y: 0.000000059604645}
+  m_Offset: {x: -0.08082664, y: 0.004756078}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -872,7 +872,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 3.0655663, y: 0.56892526}
+  m_Size: {x: 3.0655663, y: 0.5784373}
   m_EdgeRadius: 0
 --- !u!1 &1427462493
 GameObject:
@@ -1140,7 +1140,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.06587517, y: 0.03737849}
+  m_Offset: {x: -0.06587517, y: 0.028044343}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -1151,7 +1151,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 3.0356634, y: 0.4941684}
+  m_Size: {x: 3.0356634, y: 0.58893394}
   m_EdgeRadius: 0
 --- !u!1 &1685842380
 GameObject:
@@ -1340,7 +1340,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.07184601, y: -0.47597814}
+  m_Offset: {x: -0.07184601, y: -0.49071926}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -1351,7 +1351,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 11.59725, y: 2.5267224}
+  m_Size: {x: 11.59725, y: 2.49724}
   m_EdgeRadius: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
