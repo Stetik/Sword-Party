@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
-using System.Runtime.CompilerServices;
 
 public class PlayerController : MonoBehaviour
 {
@@ -67,10 +66,14 @@ public class PlayerController : MonoBehaviour
             {
                 isDefending = true;
             }
+
             if (Input.GetKeyUp(KeyCode.Mouse1))
             {
                 isDefending = false;
             }
+
+            // Update animator parameter for defense
+            animator.SetBool("IsDefending", isDefending);
 
             if (isDashing)
             {
@@ -154,6 +157,14 @@ public class PlayerController : MonoBehaviour
     {
         isCharging = true;
         chargeStartTime = Time.time;
+        animator.SetBool("IsCharging", true); // Activate charging animation
+    }
+
+    // Cancels charging without attacking
+    private void CancelCharge()
+    {
+        isCharging = false;
+        animator.SetBool("IsCharging", false); // Deactivate charging animation
     }
 
     // Release attack, performing either a normal or charged attack
@@ -162,26 +173,28 @@ public class PlayerController : MonoBehaviour
         if (isCharging)
         {
             isCharging = false;
+            animator.SetBool("IsCharging", false); // Deactivate charging animation
             float elapsedChargeTime = Time.time - chargeStartTime;
 
             // Check if the charge duration meets or exceeds the required charge time
             if (elapsedChargeTime >= chargeTime)
             {
+                animator.SetTrigger("ChargedAttack"); // Trigger charged attack animation
                 Attack(chargedDamage); // Perform a charged attack
             }
             else
             {
+                animator.SetTrigger("Attack"); // Trigger normal attack animation
                 Attack(normalDamage); // Perform a normal attack
             }
+
+
         }
     }
 
     // Attack method with a damage parameter for normal or charged attacks
     private void Attack(int damage)
     {
-        // Trigger attack animation
-        animator.SetTrigger("Attack");
-
         // Detect enemies in range of the attack
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, EnemyLayers);
 
@@ -193,7 +206,6 @@ public class PlayerController : MonoBehaviour
             Debug.Log("We hit " + enemy.name + " with damage: " + damage);
         }
     }
-
 
     [PunRPC]
     public void TakeDamage(int damageAmount)
@@ -230,12 +242,6 @@ public class PlayerController : MonoBehaviour
         {
             pv.RPC("Die", RpcTarget.AllBuffered);
         }
-    }
-
-    // Cancels charging without attacking
-    private void CancelCharge()
-    {
-        isCharging = false;
     }
 
     [PunRPC]
