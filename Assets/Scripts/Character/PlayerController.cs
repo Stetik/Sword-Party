@@ -207,14 +207,29 @@ public class PlayerController : MonoBehaviourPun
         }
     }
 
+
     [PunRPC]
-    private void Die()
+    public void AddHealth(int amount)
     {
-        Debug.Log($"Player {pv.ViewID} has died.");
+        currentHealth += amount;
+        if (currentHealth > maxHealth) // Ensure health doesn't exceed the maximum
+        {
+            currentHealth = maxHealth;
+        }
+        Debug.Log($"Current Health: {currentHealth}");
+    }
+
+
+    [PunRPC]
+    public void Die()
+    {
+        Debug.Log($"Player {photonView.ViewID} has died.");
         gameObject.SetActive(false);
 
+        // Optional: Trigger respawn logic here
         photonView.RPC(nameof(RespawnInLobby), RpcTarget.AllBuffered);
     }
+
 
     [PunRPC]
     private void RespawnInLobby()
