@@ -1,13 +1,12 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviourPun
 {
     // Movement variables
-    [SerializeField] public int speed;
-    [SerializeField] public int JumpForce;
+    [SerializeField] private int speed = 5;
+    [SerializeField] private int jumpForce = 10;
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private LayerMask groundLayer;
@@ -23,26 +22,49 @@ public class PlayerController : MonoBehaviour
     private float dashingCooldown = 1f;
 
     // Attack variables
-    public Transform attackPoint;
-    public float attackRange = 0.5f;
-    public LayerMask EnemyLayers;
-    private int normalDamage = 1;      // Normal attack damage
-    private int chargedDamage = 2;     // Charged attack damage
-    private bool isCharging = false;   // Tracks if the player is charging an attack
-    private float chargeTime = 1.0f;   // Time required for a full charge
+    [SerializeField] private Transform attackPoint;
+    [SerializeField] private float attackRange = 0.5f;
+    [SerializeField] private LayerMask enemyLayers;
+    private int normalDamage = 1;
+    private int chargedDamage = 2;
+    private bool isCharging = false;
+    private float chargeTime = 1.0f;
     private float chargeStartTime;
 
     // Defense variables
-    private bool isDefending = false;  // Tracks if the player is in defense mode
+    private bool isDefending = false;
 
-    // Health and damage variables
-    private int health = 3; // Each player starts with 3 health points
+    // Health variables
+    [SerializeField] private int maxHealth = 3;
+    private int currentHealth;
+
+    // Lobby and maps
+    private GameObject lobbyObject;
+    private GameObject[] maps;
 
     private PhotonView pv;
 
     private void Awake()
     {
         pv = GetComponent<PhotonView>();
+        currentHealth = maxHealth; // Initialize health
+    }
+
+    private void Start()
+    {
+        // Find the Lobby object dynamically
+        lobbyObject = GameObject.Find("Lobby");
+        if (lobbyObject == null)
+        {
+            Debug.LogError("Lobby object not found in the scene!");
+        }
+
+        // Find all map objects dynamically
+        maps = GameObject.FindGameObjectsWithTag("Map");
+        if (maps.Length == 0)
+        {
+            Debug.LogError("No maps found in the scene! Make sure maps have the 'Map' tag.");
+        }
     }
 
     private void Update()
@@ -51,31 +73,13 @@ public class PlayerController : MonoBehaviour
         {
             HandleMovement();
 
-            // Allow all actions in both Lobby and Gameplay states
-            if (Input.GetKeyDown(KeyCode.Mouse0)) // Start charging or attack
-            {
-                StartCharging();
-            }
-            if (Input.GetKeyUp(KeyCode.Mouse0)) // Release attack
-            {
-                ReleaseAttack();
-            }
-            if (Input.GetKeyDown(KeyCode.Mouse1)) // Start defense
-            {
-                isDefending = true;
-                animator.SetBool("IsDefending", true);
-            }
-            if (Input.GetKeyUp(KeyCode.Mouse1)) // Stop defense
-            {
-                isDefending = false;
-                animator.SetBool("IsDefending", false);
-            }
+            if (Input.GetKeyDown(KeyCode.Mouse0)) StartCharging();
+            if (Input.GetKeyUp(KeyCode.Mouse0)) ReleaseAttack();
 
-            // Dash logic
-            if (Input.GetKeyDown(KeyCode.LeftShift) && canDash)
-            {
-                StartCoroutine(Dash());
-            }
+            if (Input.GetKeyDown(KeyCode.Mouse1)) StartDefending();
+            if (Input.GetKeyUp(KeyCode.Mouse1)) StopDefending();
+
+            if (Input.GetKeyDown(KeyCode.LeftShift) && canDash) StartCoroutine(Dash());
         }
     }
 
@@ -86,8 +90,8 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetButtonDown("Jump") && IsGrounded())
         {
-            rb.velocity = new Vector2(rb.velocity.x, JumpForce);
-            animator.SetBool("IsJumping", true); // Set jumping to true when jump starts
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            animator.SetBool("IsJumping", true);
         }
 
         if (Input.GetButtonUp("Jump") && rb.velocity.y > 0)
@@ -126,12 +130,13 @@ public class PlayerController : MonoBehaviour
         float originalGravity = rb.gravityScale;
         rb.gravityScale = 0f;
         rb.velocity = new Vector2(transform.localScale.x * dashingPower, 0f);
-        yield return new WaitForSeconds(dashingTime);
 
-        animator.SetBool("IsDashing", false);
+        yield return new WaitForSeconds(dashingTime);
 
         rb.gravityScale = originalGravity;
         isDashing = false;
+        animator.SetBool("IsDashing", false);
+
         yield return new WaitForSeconds(dashingCooldown);
         canDash = true;
     }
@@ -140,7 +145,7 @@ public class PlayerController : MonoBehaviour
     {
         isCharging = true;
         chargeStartTime = Time.time;
-        animator.SetBool("IsCharging", true); // Activate charging animation
+        animator.SetBool("IsCharging", true);
     }
 
     private void ReleaseAttack()
@@ -165,19 +170,9 @@ public class PlayerController : MonoBehaviour
 
     private void Attack(int damage)
     {
-        Debug.Log($"Current GameState in Attack: {GameManager.Instance.CurrentState}");
+        if (GameManager.Instance.CurrentState == GameManager.GameState.Lobby) return;
 
-        // Prevent dealing damage in the lobby
-        if (GameManager.Instance.CurrentState == GameManager.GameState.Lobby)
-        {
-            Debug.Log("Attacks in the lobby do not deal damage.");
-            return; // Skip dealing damage in the lobby
-        }
-
-        // Detect enemies in range of the attack
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, EnemyLayers);
-
-        // Deal damage in gameplay
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
         foreach (Collider2D enemy in hitEnemies)
         {
             enemy.GetComponent<PhotonView>()?.RPC("TakeDamage", RpcTarget.AllBuffered, damage);
@@ -185,24 +180,30 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void StartDefending()
+    {
+        isDefending = true;
+        animator.SetBool("IsDefending", true);
+        Debug.Log("Started defending");
+    }
+
+    private void StopDefending()
+    {
+        isDefending = false;
+        animator.SetBool("IsDefending", false);
+        Debug.Log("Stopped defending");
+    }
+
     [PunRPC]
     public void TakeDamage(int damageAmount)
     {
         if (!pv.IsMine) return;
 
-        // Prevent taking damage in the lobby
-        if (GameManager.Instance.CurrentState == GameManager.GameState.Lobby)
-        {
-            Debug.Log("Damage is disabled in the lobby.");
-            return;
-        }
+        currentHealth -= damageAmount;
 
-        health -= damageAmount;
-        Debug.Log($"Player {pv.ViewID} took {damageAmount} damage. Remaining health: {health}");
-
-        if (health <= 0)
+        if (currentHealth <= 0)
         {
-            pv.RPC("Die", RpcTarget.AllBuffered);
+            photonView.RPC(nameof(Die), RpcTarget.AllBuffered);
         }
     }
 
@@ -211,6 +212,41 @@ public class PlayerController : MonoBehaviour
     {
         Debug.Log($"Player {pv.ViewID} has died.");
         gameObject.SetActive(false);
+
+        photonView.RPC(nameof(RespawnInLobby), RpcTarget.AllBuffered);
+    }
+
+    [PunRPC]
+    private void RespawnInLobby()
+    {
+        Debug.Log("Respawning player in the lobby...");
+
+        // Activate the lobby object
+        if (lobbyObject != null)
+        {
+            lobbyObject.SetActive(true);
+            Debug.Log("Lobby activated.");
+        }
+        else
+        {
+            Debug.LogError("Lobby object not found!");
+        }
+
+        // Deactivate all map objects
+        foreach (GameObject map in maps)
+        {
+            if (map != null)
+            {
+                map.SetActive(false);
+                Debug.Log($"Deactivated map: {map.name}");
+            }
+        }
+
+        // Reset health and respawn player
+        currentHealth = maxHealth;
+        transform.position = lobbyObject.transform.position; // Move player to the lobby
+        gameObject.SetActive(true);
+        Debug.Log($"Player {pv.ViewID} has respawned in the lobby.");
     }
 
     private void OnDrawGizmosSelected()

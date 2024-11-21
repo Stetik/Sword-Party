@@ -4,137 +4,137 @@ using Photon.Pun;
 
 public class StartGameTrigger : MonoBehaviourPun
 {
-    private Dictionary<Photon.Realtime.Player, float> playersInZone = new Dictionary<Photon.Realtime.Player, float>();
-    [SerializeField] private GameObject map; // Assign the specific map in the Inspector
-    [SerializeField] private GameObject lobbyObject; // Assign the lobby object in the Inspector
+    private readonly Dictionary<Photon.Realtime.Player, float> playersInZone = new();
+    [SerializeField] private GameObject map; // Assigned map object
+    [SerializeField] private GameObject lobbyObject; // Assigned lobby object
     private float startGameTimer = 0f;
-    private const float requiredTimeInZone = 3f; // Time players need to stay in the zone
+    private const float RequiredTimeInZone = 3f; // Time players need to stay in the zone
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        PhotonView playerView = collision.GetComponent<PhotonView>();
-        if (playerView != null)
-        {
-            Photon.Realtime.Player player = playerView.Owner;
+        var playerView = collision.GetComponent<PhotonView>();
+        if (playerView == null) return;
 
-            if (player != null && !playersInZone.ContainsKey(player))
-            {
-                playersInZone[player] = Time.time;
-                Debug.Log("Player entered the zone: " + player.NickName);
-            }
+        var player = playerView.Owner;
+        if (player != null && !playersInZone.ContainsKey(player))
+        {
+            playersInZone[player] = Time.time;
+            Debug.Log($"Player entered the zone");
         }
     }
 
     private void OnTriggerExit2D(Collider2D collision)
     {
-        PhotonView playerView = collision.GetComponent<PhotonView>();
-        if (playerView != null)
-        {
-            Photon.Realtime.Player player = playerView.Owner;
+        var playerView = collision.GetComponent<PhotonView>();
+        if (playerView == null) return;
 
-            if (player != null && playersInZone.ContainsKey(player))
-            {
-                playersInZone.Remove(player);
-                Debug.Log("Player left the zone: " + player.NickName);
-                startGameTimer = 0f; // Reset the timer
-            }
+        var player = playerView.Owner;
+        if (player != null && playersInZone.Remove(player))
+        {
+            Debug.Log($"Player left the zone: {player.NickName}");
+            startGameTimer = 0f; // Reset the timer
         }
     }
 
     private void Update()
     {
-        if (map == null || lobbyObject == null)
+        if (!ValidateAssignedObjects()) return;
+
+        if (playersInZone.Count < PhotonNetwork.CurrentRoom.PlayerCount)
         {
-            Debug.LogError("Map or Lobby object not assigned in the Inspector!");
+            startGameTimer = 0f; // Reset timer if not all players are in the zone
             return;
         }
 
-        if (playersInZone.Count < PhotonNetwork.CurrentRoom.PlayerCount) // Require all players to be in the zone
-        {
-            startGameTimer = 0f;
-            return;
-        }
-
-        // Check if all players have been in the zone for the required time
-        bool allPlayersReady = true;
-
-        foreach (var kvp in playersInZone)
-        {
-            Photon.Realtime.Player player = kvp.Key;
-
-            if (player == null || !PhotonNetwork.CurrentRoom.Players.ContainsValue(player))
-            {
-                allPlayersReady = false;
-                break;
-            }
-
-            float entryTime = kvp.Value;
-
-            if (Time.time - entryTime < requiredTimeInZone)
-            {
-                allPlayersReady = false;
-                break;
-            }
-        }
-
-        if (allPlayersReady)
+        if (AreAllPlayersReady())
         {
             startGameTimer += Time.deltaTime;
 
-            if (startGameTimer >= requiredTimeInZone)
+            if (startGameTimer >= RequiredTimeInZone)
             {
-                photonView.RPC("ActivateMapAndRespawnPlayers", RpcTarget.AllBuffered); // Trigger map activation and respawn players
-                startGameTimer = 0f; // Reset timer to prevent duplicate calls
+                photonView.RPC(nameof(ActivateMapAndRespawnPlayers), RpcTarget.AllBuffered);
+                startGameTimer = 0f; // Prevent duplicate calls
             }
         }
+    }
+
+    private bool ValidateAssignedObjects()
+    {
+        if (map == null || lobbyObject == null)
+        {
+            Debug.LogError("Map or Lobby object not assigned in the Inspector!");
+            return false;
+        }
+        return true;
+    }
+
+    private bool AreAllPlayersReady()
+    {
+        foreach (var kvp in playersInZone)
+        {
+            var player = kvp.Key;
+            if (player == null || !PhotonNetwork.CurrentRoom.Players.ContainsValue(player))
+                return false;
+
+            if (Time.time - kvp.Value < RequiredTimeInZone)
+                return false;
+        }
+
+        return true;
     }
 
     [PunRPC]
     private void ActivateMapAndRespawnPlayers()
     {
+        if (!ValidateActivationRequirements()) return;
+
+        lobbyObject.SetActive(false);
+        map.SetActive(true);
+
+        Debug.Log("Lobby deactivated and map activated.");
+
+        RespawnPlayers();
+
+        GameManager.Instance.StartGameplay();
+    }
+
+    private bool ValidateActivationRequirements()
+    {
         if (map == null || lobbyObject == null || PlayerSpawn.SharedSpawnPoints == null || PlayerSpawn.SharedSpawnPoints.Length == 0)
         {
             Debug.LogError("Map, Lobby, or Spawn Points are not properly assigned!");
-            return;
+            return false;
         }
+        return true;
+    }
 
-        // Deactivate the lobby
-        lobbyObject.SetActive(false);
-        Debug.Log("Lobby deactivated.");
-
-        // Activate the selected map
-        map.SetActive(true);
-        Debug.Log("Map activated: " + map.name);
-
-        // Respawn players at their original spawn points
-        foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
+    private void RespawnPlayers()
+    {
+        var spawnPoints = PlayerSpawn.SharedSpawnPoints;
+        foreach (var player in PhotonNetwork.PlayerList)
         {
             int playerIndex = player.ActorNumber - 1; // ActorNumber starts at 1
-            Vector2[] spawnPoints = PlayerSpawn.SharedSpawnPoints;
 
             if (playerIndex < spawnPoints.Length)
             {
-                PhotonView playerView = FindPlayerPhotonView(player.ActorNumber);
-                if (playerView != null && playerView.IsMine) // Ensure this is the local player
+                var playerView = FindPlayerPhotonView(player.ActorNumber);
+                if (playerView != null && playerView.IsMine)
                 {
-                    playerView.transform.position = spawnPoints[playerIndex]; // Move the player
+                    playerView.transform.position = spawnPoints[playerIndex];
                     Debug.Log($"Player {player.NickName} respawned at {spawnPoints[playerIndex]}");
                 }
             }
         }
-
-        // Start the gameplay state
-        GameManager.Instance.StartGameplay();
     }
 
     private PhotonView FindPlayerPhotonView(int actorNumber)
     {
-        foreach (GameObject playerObject in GameObject.FindGameObjectsWithTag("Player")) // Ensure your player prefab has a "Player" tag
+        foreach (var playerObject in GameObject.FindGameObjectsWithTag("Player"))
         {
-            PhotonView pv = playerObject.GetComponent<PhotonView>();
-            if (pv != null && pv.Owner.ActorNumber == actorNumber)
+            var photonView = playerObject.GetComponent<PhotonView>();
+            if (photonView != null && photonView.Owner.ActorNumber == actorNumber)
             {
-                return pv;
+                return photonView;
             }
         }
 

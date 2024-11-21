@@ -1,29 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
 public class GameManager : MonoBehaviourPun
 {
-    public static GameManager Instance;
+    public static GameManager Instance { get; private set; }
 
     public enum GameState { Lobby, Gameplay }
     private GameState currentState = GameState.Lobby;
-
-    public delegate void OnGameStateChanged(GameState newState);
-    public static event OnGameStateChanged GameStateChanged;
 
     public GameState CurrentState
     {
         get => currentState;
         private set
         {
-            if (currentState != value)
-            {
-                currentState = value;
-                Debug.Log($"Game state changed to: {currentState}");
-                GameStateChanged?.Invoke(currentState);
-            }
+            if (currentState == value) return;
+
+            currentState = value;
+            Debug.Log($"Game state changed to: {currentState}");
         }
     }
 
@@ -42,26 +35,24 @@ public class GameManager : MonoBehaviourPun
 
     public void StartGameplay()
     {
-        if (photonView == null)
-        {
-            Debug.LogError("PhotonView is null in GameManager! Ensure this script has a PhotonView component.");
-            return;
-        }
-
-        Debug.Log("Transitioning to Gameplay...");
-        photonView.RPC("SyncGameState", RpcTarget.AllBuffered, GameState.Gameplay);
+        ChangeGameState(GameState.Gameplay);
     }
 
     public void StartLobby()
     {
-        if (photonView == null)
-        {
-            Debug.LogError("PhotonView is null in GameManager! Ensure this script has a PhotonView component.");
-            return;
-        }
+        ChangeGameState(GameState.Lobby);
+    }
 
-        Debug.Log("Transitioning to Lobby...");
-        photonView.RPC("SyncGameState", RpcTarget.AllBuffered, GameState.Lobby);
+    private void ChangeGameState(GameState newState)
+    {
+        if (PhotonNetwork.IsConnected)
+        {
+            photonView.RPC(nameof(SyncGameState), RpcTarget.AllBuffered, newState);
+        }
+        else
+        {
+            SyncGameState(newState); // Fallback for offline mode
+        }
     }
 
     [PunRPC]

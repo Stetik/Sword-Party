@@ -47,6 +47,10 @@ MonoBehaviour:
   - SyncGameState
   - ActivateMap
   - ActivateMapAndRespawnPlayers
+  - LoadMainMenu
+  - LoadScene
+  - RespawnInLobby
+  - ReturnToLobby
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
