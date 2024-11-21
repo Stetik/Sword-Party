@@ -49,71 +49,55 @@ public class PlayerController : MonoBehaviour
     {
         if (pv.IsMine)
         {
-            // Start charging or normal attack
-            if (Input.GetKeyDown(KeyCode.Mouse0))
+            HandleMovement();
+
+            // Allow all actions in both Lobby and Gameplay states
+            if (Input.GetKeyDown(KeyCode.Mouse0)) // Start charging or attack
             {
                 StartCharging();
             }
-
-            // Release attack (either normal or charged)
-            if (Input.GetKeyUp(KeyCode.Mouse0))
+            if (Input.GetKeyUp(KeyCode.Mouse0)) // Release attack
             {
                 ReleaseAttack();
             }
-
-            // Defense mode
-            if (Input.GetKeyDown(KeyCode.Mouse1))
+            if (Input.GetKeyDown(KeyCode.Mouse1)) // Start defense
             {
                 isDefending = true;
+                animator.SetBool("IsDefending", true);
             }
-
-            if (Input.GetKeyUp(KeyCode.Mouse1))
+            if (Input.GetKeyUp(KeyCode.Mouse1)) // Stop defense
             {
                 isDefending = false;
+                animator.SetBool("IsDefending", false);
             }
 
-            // Update animator parameter for defense
-            animator.SetBool("IsDefending", isDefending);
-
-            if (isDashing)
-            {
-                return;
-            }
-
-            // Update animator parameters for animations
-            animator.SetFloat("Speed", Mathf.Abs(horizontal)); // Update Speed for run animation
-
-            // Check if player is grounded to update jump state
-            if (IsGrounded())
-            {
-                animator.SetBool("IsJumping", false); // If grounded, not jumping
-            }
-            else
-            {
-                animator.SetBool("IsJumping", true); // If in air, jumping
-            }
-
-            // Movement logic
-            horizontal = Input.GetAxisRaw("Horizontal");
-            rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
-
-            if (Input.GetButtonDown("Jump") && IsGrounded())
-            {
-                rb.velocity = new Vector2(rb.velocity.x, JumpForce);
-                animator.SetBool("IsJumping", true); // Set jumping to true when jump starts
-            }
-            if (Input.GetButtonUp("Jump") && rb.velocity.y > 0)
-            {
-                rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
-            }
-
+            // Dash logic
             if (Input.GetKeyDown(KeyCode.LeftShift) && canDash)
             {
                 StartCoroutine(Dash());
             }
-
-            flip();
         }
+    }
+
+    private void HandleMovement()
+    {
+        horizontal = Input.GetAxisRaw("Horizontal");
+        rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
+
+        if (Input.GetButtonDown("Jump") && IsGrounded())
+        {
+            rb.velocity = new Vector2(rb.velocity.x, JumpForce);
+            animator.SetBool("IsJumping", true); // Set jumping to true when jump starts
+        }
+
+        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
+        }
+
+        FlipCharacter();
+        animator.SetFloat("Speed", Mathf.Abs(horizontal));
+        animator.SetBool("IsJumping", !IsGrounded());
     }
 
     private bool IsGrounded()
@@ -121,9 +105,9 @@ public class PlayerController : MonoBehaviour
         return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
     }
 
-    private void flip()
+    private void FlipCharacter()
     {
-        if (isFacingRight && horizontal < 0f || !isFacingRight && horizontal > 0f)
+        if ((isFacingRight && horizontal < 0f) || (!isFacingRight && horizontal > 0f))
         {
             isFacingRight = !isFacingRight;
             Vector3 localScale = transform.localScale;
@@ -152,7 +136,6 @@ public class PlayerController : MonoBehaviour
         canDash = true;
     }
 
-    // Start charging for an attack
     private void StartCharging()
     {
         isCharging = true;
@@ -160,50 +143,45 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("IsCharging", true); // Activate charging animation
     }
 
-    // Cancels charging without attacking
-    private void CancelCharge()
-    {
-        isCharging = false;
-        animator.SetBool("IsCharging", false); // Deactivate charging animation
-    }
-
-    // Release attack, performing either a normal or charged attack
     private void ReleaseAttack()
     {
-        if (isCharging)
+        if (!isCharging) return;
+
+        isCharging = false;
+        animator.SetBool("IsCharging", false);
+        float elapsedChargeTime = Time.time - chargeStartTime;
+
+        if (elapsedChargeTime >= chargeTime)
         {
-            isCharging = false;
-            animator.SetBool("IsCharging", false); // Deactivate charging animation
-            float elapsedChargeTime = Time.time - chargeStartTime;
-
-            // Check if the charge duration meets or exceeds the required charge time
-            if (elapsedChargeTime >= chargeTime)
-            {
-                animator.SetTrigger("ChargedAttack"); // Trigger charged attack animation
-                Attack(chargedDamage); // Perform a charged attack
-            }
-            else
-            {
-                animator.SetTrigger("Attack"); // Trigger normal attack animation
-                Attack(normalDamage); // Perform a normal attack
-            }
-
-
+            animator.SetTrigger("ChargedAttack");
+            Attack(chargedDamage);
+        }
+        else
+        {
+            animator.SetTrigger("Attack");
+            Attack(normalDamage);
         }
     }
 
-    // Attack method with a damage parameter for normal or charged attacks
     private void Attack(int damage)
     {
+        Debug.Log($"Current GameState in Attack: {GameManager.Instance.CurrentState}");
+
+        // Prevent dealing damage in the lobby
+        if (GameManager.Instance.CurrentState == GameManager.GameState.Lobby)
+        {
+            Debug.Log("Attacks in the lobby do not deal damage.");
+            return; // Skip dealing damage in the lobby
+        }
+
         // Detect enemies in range of the attack
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, EnemyLayers);
 
-        // Deal damage to enemies
+        // Deal damage in gameplay
         foreach (Collider2D enemy in hitEnemies)
         {
-            // Call TakeDamage on the enemy's PhotonView using RPC
-            enemy.GetComponent<PhotonView>().RPC("TakeDamage", RpcTarget.AllBuffered, damage);
-            Debug.Log("We hit " + enemy.name + " with damage: " + damage);
+            enemy.GetComponent<PhotonView>()?.RPC("TakeDamage", RpcTarget.AllBuffered, damage);
+            Debug.Log($"Hit {enemy.name} for {damage} damage");
         }
     }
 
@@ -212,31 +190,15 @@ public class PlayerController : MonoBehaviour
     {
         if (!pv.IsMine) return;
 
-        // If player was charging an attack when hit, cancel charge and reduce health
-        if (isCharging)
+        // Prevent taking damage in the lobby
+        if (GameManager.Instance.CurrentState == GameManager.GameState.Lobby)
         {
-            CancelCharge();
-            health -= 1;  // Penalty for being hit while charging
-            Debug.Log("Charge canceled! Player lost 1 health. Remaining health: " + health);
-        }
-
-        // Check if the player is defending
-        if (isDefending)
-        {
-            if (damageAmount == normalDamage)
-            {
-                Debug.Log("Attack blocked! No damage taken.");
-                return; // Block normal attack, no damage taken
-            }
-            else if (damageAmount == chargedDamage)
-            {
-                damageAmount = 1; // Reduce charged attack damage to 1
-                Debug.Log("Blocked a charged attack! Took reduced damage: 1");
-            }
+            Debug.Log("Damage is disabled in the lobby.");
+            return;
         }
 
         health -= damageAmount;
-        Debug.Log("Player " + pv.ViewID + " Remaining Health: " + health);
+        Debug.Log($"Player {pv.ViewID} took {damageAmount} damage. Remaining health: {health}");
 
         if (health <= 0)
         {
@@ -247,16 +209,15 @@ public class PlayerController : MonoBehaviour
     [PunRPC]
     private void Die()
     {
-        Debug.Log("Player " + pv.ViewID + " has died.");
+        Debug.Log($"Player {pv.ViewID} has died.");
         gameObject.SetActive(false);
     }
 
-    void OnDrawGizmosSelected()
+    private void OnDrawGizmosSelected()
     {
-        if (attackPoint == null)
+        if (attackPoint != null)
         {
-            return;
+            Gizmos.DrawWireSphere(attackPoint.position, attackRange);
         }
-        Gizmos.DrawWireSphere(attackPoint.position, attackRange);
     }
 }

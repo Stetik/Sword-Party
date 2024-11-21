@@ -41,6 +41,12 @@ MonoBehaviour:
   - RespawnSpaceship
   - TakeDamage
   - Die
+  - StartGame
+  - AddPlayerToZone
+  - RemovePlayerFromZone
+  - SyncGameState
+  - ActivateMap
+  - ActivateMapAndRespawnPlayers
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
