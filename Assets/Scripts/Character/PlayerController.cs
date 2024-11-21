@@ -88,20 +88,21 @@ public class PlayerController : MonoBehaviourPun
         horizontal = Input.GetAxisRaw("Horizontal");
         rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
 
+        // Synchronize Speed parameter
+        photonView.RPC("SetAnimatorFloat", RpcTarget.All, "Speed", Mathf.Abs(horizontal));
+
         if (Input.GetButtonDown("Jump") && IsGrounded())
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-            animator.SetBool("IsJumping", true);
+            photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsJumping", true);
         }
 
-        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0)
+        if (IsGrounded())
         {
-            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
+            photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsJumping", false);
         }
 
         FlipCharacter();
-        animator.SetFloat("Speed", Mathf.Abs(horizontal));
-        animator.SetBool("IsJumping", !IsGrounded());
     }
 
     private bool IsGrounded()
@@ -114,18 +115,28 @@ public class PlayerController : MonoBehaviourPun
         if ((isFacingRight && horizontal < 0f) || (!isFacingRight && horizontal > 0f))
         {
             isFacingRight = !isFacingRight;
-            Vector3 localScale = transform.localScale;
-            localScale.x *= -1f;
-            transform.localScale = localScale;
+
+            // Synchronize the flip across the network
+            photonView.RPC("FlipNetwork", RpcTarget.AllBuffered, isFacingRight);
         }
     }
+
+    [PunRPC]
+    private void FlipNetwork(bool facingRight)
+    {
+        isFacingRight = facingRight;
+        Vector3 localScale = transform.localScale;
+        localScale.x = facingRight ? Mathf.Abs(localScale.x) : -Mathf.Abs(localScale.x);
+        transform.localScale = localScale;
+    }
+
 
     private IEnumerator Dash()
     {
         canDash = false;
         isDashing = true;
 
-        animator.SetBool("IsDashing", true);
+        photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsDashing", true);
 
         float originalGravity = rb.gravityScale;
         rb.gravityScale = 0f;
@@ -135,7 +146,7 @@ public class PlayerController : MonoBehaviourPun
 
         rb.gravityScale = originalGravity;
         isDashing = false;
-        animator.SetBool("IsDashing", false);
+        photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsDashing", false);
 
         yield return new WaitForSeconds(dashingCooldown);
         canDash = true;
@@ -145,7 +156,7 @@ public class PlayerController : MonoBehaviourPun
     {
         isCharging = true;
         chargeStartTime = Time.time;
-        animator.SetBool("IsCharging", true);
+        photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsCharging", true);
     }
 
     private void ReleaseAttack()
@@ -153,17 +164,17 @@ public class PlayerController : MonoBehaviourPun
         if (!isCharging) return;
 
         isCharging = false;
-        animator.SetBool("IsCharging", false);
+        photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsCharging", false);
         float elapsedChargeTime = Time.time - chargeStartTime;
 
         if (elapsedChargeTime >= chargeTime)
         {
-            animator.SetTrigger("ChargedAttack");
+            photonView.RPC("TriggerAnimator", RpcTarget.All, "ChargedAttack");
             Attack(chargedDamage);
         }
         else
         {
-            animator.SetTrigger("Attack");
+            photonView.RPC("TriggerAnimator", RpcTarget.All, "Attack");
             Attack(normalDamage);
         }
     }
@@ -183,15 +194,33 @@ public class PlayerController : MonoBehaviourPun
     private void StartDefending()
     {
         isDefending = true;
-        animator.SetBool("IsDefending", true);
+        photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsDefending", true);
         Debug.Log("Started defending");
     }
 
     private void StopDefending()
     {
         isDefending = false;
-        animator.SetBool("IsDefending", false);
+        photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsDefending", false);
         Debug.Log("Stopped defending");
+    }
+
+    [PunRPC]
+    public void SetAnimatorBool(string parameter, bool value)
+    {
+        animator.SetBool(parameter, value);
+    }
+
+    [PunRPC]
+    public void SetAnimatorFloat(string parameter, float value)
+    {
+        animator.SetFloat(parameter, value);
+    }
+
+    [PunRPC]
+    public void TriggerAnimator(string trigger)
+    {
+        animator.SetTrigger(trigger);
     }
 
     [PunRPC]
@@ -207,18 +236,16 @@ public class PlayerController : MonoBehaviourPun
         }
     }
 
-
     [PunRPC]
     public void AddHealth(int amount)
     {
         currentHealth += amount;
-        if (currentHealth > maxHealth) // Ensure health doesn't exceed the maximum
+        if (currentHealth > maxHealth)
         {
             currentHealth = maxHealth;
         }
         Debug.Log($"Current Health: {currentHealth}");
     }
-
 
     [PunRPC]
     public void Die()
@@ -226,40 +253,30 @@ public class PlayerController : MonoBehaviourPun
         Debug.Log($"Player {photonView.ViewID} has died.");
         gameObject.SetActive(false);
 
-        // Optional: Trigger respawn logic here
         photonView.RPC(nameof(RespawnInLobby), RpcTarget.AllBuffered);
     }
-
 
     [PunRPC]
     private void RespawnInLobby()
     {
         Debug.Log("Respawning player in the lobby...");
 
-        // Activate the lobby object
         if (lobbyObject != null)
         {
             lobbyObject.SetActive(true);
-            Debug.Log("Lobby activated.");
         }
         else
         {
             Debug.LogError("Lobby object not found!");
         }
 
-        // Deactivate all map objects
         foreach (GameObject map in maps)
         {
-            if (map != null)
-            {
-                map.SetActive(false);
-                Debug.Log($"Deactivated map: {map.name}");
-            }
+            if (map != null) map.SetActive(false);
         }
 
-        // Reset health and respawn player
         currentHealth = maxHealth;
-        transform.position = lobbyObject.transform.position; // Move player to the lobby
+        transform.position = lobbyObject.transform.position;
         gameObject.SetActive(true);
         Debug.Log($"Player {pv.ViewID} has respawned in the lobby.");
     }
