@@ -25,7 +25,7 @@ public class MainMenuTrigger : MonoBehaviourPunCallbacks
         {
             isInsideTrigger = false; // Mark player as outside the trigger
             timeInsideTrigger = 0f; // Reset the timer
-            Debug.Log($"Player {PhotonNetwork.LocalPlayer.NickName} left the trigger zone. Timer reset.");
+            Debug.Log($"Player left the trigger zone. Timer reset.");
         }
     }
 
@@ -37,7 +37,7 @@ public class MainMenuTrigger : MonoBehaviourPunCallbacks
 
             if (timeInsideTrigger >= requiredTimeInTrigger)
             {
-                Debug.Log($"Player {PhotonNetwork.LocalPlayer.NickName} has stayed in the trigger zone for {requiredTimeInTrigger} seconds. Transitioning...");
+                Debug.Log($"Player has stayed in the trigger zone for {requiredTimeInTrigger} seconds. Transitioning...");
                 StartCoroutine(LeaveRoomAndLoadMainMenu());
             }
         }

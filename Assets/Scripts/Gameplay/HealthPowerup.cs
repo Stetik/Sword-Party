@@ -14,7 +14,7 @@ public class HealthPowerup : MonoBehaviourPun
             // Add health to the player
             player.photonView.RPC("AddHealth", RpcTarget.AllBuffered, healthBonus);
 
-            // Destroy the power-up across the network
+            
             PhotonNetwork.Destroy(gameObject);
 
             Debug.Log($"Player healed for {healthBonus} points.");

@@ -8,7 +8,7 @@ public class StartGameTrigger : MonoBehaviourPun
     [SerializeField] private GameObject map; // Assigned map object
     [SerializeField] private GameObject lobbyObject; // Assigned lobby object
     private float startGameTimer = 0f;
-    private const float RequiredTimeInZone = 3f; // Time players need to stay in the zone
+    private const float RequiredTimeInZone = 2f; 
 
     private void OnTriggerEnter2D(Collider2D collision)
     {

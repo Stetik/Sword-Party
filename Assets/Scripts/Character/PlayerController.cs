@@ -47,19 +47,19 @@ public class PlayerController : MonoBehaviourPun
     private void Awake()
     {
         pv = GetComponent<PhotonView>();
-        currentHealth = maxHealth; // Initialize health
+        currentHealth = maxHealth;
     }
 
     private void Start()
     {
-        // Find the Lobby object dynamically
+        
         lobbyObject = GameObject.Find("Lobby");
         if (lobbyObject == null)
         {
             Debug.LogError("Lobby object not found in the scene!");
         }
 
-        // Find all map objects dynamically
+        
         maps = GameObject.FindGameObjectsWithTag("Map");
         if (maps.Length == 0)
         {
@@ -88,7 +88,7 @@ public class PlayerController : MonoBehaviourPun
         horizontal = Input.GetAxisRaw("Horizontal");
         rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
 
-        // Synchronize Speed parameter
+        
         photonView.RPC("SetAnimatorFloat", RpcTarget.All, "Speed", Mathf.Abs(horizontal));
 
         if (Input.GetButtonDown("Jump") && IsGrounded())
@@ -116,7 +116,7 @@ public class PlayerController : MonoBehaviourPun
         {
             isFacingRight = !isFacingRight;
 
-            // Synchronize the flip across the network
+            
             photonView.RPC("FlipNetwork", RpcTarget.AllBuffered, isFacingRight);
         }
     }
@@ -278,7 +278,7 @@ public class PlayerController : MonoBehaviourPun
         currentHealth = maxHealth;
         transform.position = lobbyObject.transform.position;
         gameObject.SetActive(true);
-        Debug.Log($"Player {pv.ViewID} has respawned in the lobby.");
+        Debug.Log($"Player has respawned in the lobby.");
     }
 
     private void OnDrawGizmosSelected()
