@@ -9,15 +9,30 @@ public class HealthPowerup : MonoBehaviourPun
     {
         // Check if the player collides with the power-up
         PlayerController player = collision.GetComponent<PlayerController>();
-        if (player != null && player.photonView.IsMine) // Ensure this is the local player
+        if (player != null && PhotonNetwork.IsConnected)
         {
-            // Add health to the player
-            player.photonView.RPC("AddHealth", RpcTarget.AllBuffered, healthBonus);
-
-            
-            PhotonNetwork.Destroy(gameObject);
-
-            Debug.Log($"Player healed for {healthBonus} points.");
+            // Synchronize the health bonus and destroy the power-up across all players
+            photonView.RPC("ApplyPowerup", RpcTarget.All, player.photonView.ViewID);
         }
+    }
+
+    [PunRPC]
+    private void ApplyPowerup(int playerViewID)
+    {
+        // Find the player using the ViewID
+        PhotonView playerView = PhotonView.Find(playerViewID);
+        if (playerView != null)
+        {
+            PlayerController player = playerView.GetComponent<PlayerController>();
+            if (player != null)
+            {
+                // Add health to the player
+                player.AddHealth(healthBonus);
+            }
+        }
+
+        // Destroy the power-up on all clients
+        Destroy(gameObject);
+        Debug.Log("Power-up applied and destroyed.");
     }
 }
