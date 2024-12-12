@@ -49,14 +49,6 @@ public class PlayerController : MonoBehaviourPun
         pv = GetComponent<PhotonView>();
         currentHealth = maxHealth;
 
-        if (pv.IsMine)
-        {
-            Debug.Log(PhotonNetwork.NickName);
-        }
-        else
-        {
-            Debug.Log(pv.Owner.NickName);
-        }
     }
 
     private void Start()
