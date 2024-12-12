@@ -52,14 +52,12 @@ public class PlayerController : MonoBehaviourPun
 
     private void Start()
     {
-        
         lobbyObject = GameObject.Find("Lobby");
         if (lobbyObject == null)
         {
             Debug.LogError("Lobby object not found in the scene!");
         }
 
-        
         maps = GameObject.FindGameObjectsWithTag("Map");
         if (maps.Length == 0)
         {
@@ -73,11 +71,23 @@ public class PlayerController : MonoBehaviourPun
         {
             HandleMovement();
 
+            if (Input.GetKey(KeyCode.Mouse1))
+            {
+                if (!isDefending)
+                {
+                    StartDefending();
+                }
+            }
+            else
+            {
+                if (isDefending)
+                {
+                    StopDefending();
+                }
+            }
+
             if (Input.GetKeyDown(KeyCode.Mouse0)) StartCharging();
             if (Input.GetKeyUp(KeyCode.Mouse0)) ReleaseAttack();
-
-            if (Input.GetKeyDown(KeyCode.Mouse1)) StartDefending();
-            if (Input.GetKeyUp(KeyCode.Mouse1)) StopDefending();
 
             if (Input.GetKeyDown(KeyCode.LeftShift) && canDash) StartCoroutine(Dash());
         }
@@ -88,7 +98,6 @@ public class PlayerController : MonoBehaviourPun
         horizontal = Input.GetAxisRaw("Horizontal");
         rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
 
-        
         photonView.RPC("SetAnimatorFloat", RpcTarget.All, "Speed", Mathf.Abs(horizontal));
 
         if (Input.GetButtonDown("Jump") && IsGrounded())
@@ -116,7 +125,6 @@ public class PlayerController : MonoBehaviourPun
         {
             isFacingRight = !isFacingRight;
 
-            
             photonView.RPC("FlipNetwork", RpcTarget.AllBuffered, isFacingRight);
         }
     }
@@ -129,7 +137,6 @@ public class PlayerController : MonoBehaviourPun
         localScale.x = facingRight ? Mathf.Abs(localScale.x) : -Mathf.Abs(localScale.x);
         transform.localScale = localScale;
     }
-
 
     private IEnumerator Dash()
     {
@@ -194,15 +201,15 @@ public class PlayerController : MonoBehaviourPun
     private void StartDefending()
     {
         isDefending = true;
+        Debug.Log("Defending started");
         photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsDefending", true);
-        Debug.Log("Started defending");
     }
 
     private void StopDefending()
     {
         isDefending = false;
+        Debug.Log("Defending stopped");
         photonView.RPC("SetAnimatorBool", RpcTarget.All, "IsDefending", false);
-        Debug.Log("Stopped defending");
     }
 
     [PunRPC]
@@ -280,6 +287,8 @@ public class PlayerController : MonoBehaviourPun
         gameObject.SetActive(true);
         Debug.Log($"Player has respawned in the lobby.");
     }
+
+
 
     private void OnDrawGizmosSelected()
     {
