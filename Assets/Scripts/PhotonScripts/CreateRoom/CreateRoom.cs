@@ -12,6 +12,7 @@ public class CreateRoom : MonoBehaviourPunCallbacks
     [SerializeField] private Button joinButton;
     [SerializeField] private TMPro.TMP_InputField createInput;
     [SerializeField] private TMPro.TMP_InputField joinInput;
+    [SerializeField] private TMPro.TMP_InputField nicknameImput;
     private void Awake()
     {
         createButton.onClick.AddListener(CreateNewRoom);
@@ -28,10 +29,12 @@ public class CreateRoom : MonoBehaviourPunCallbacks
         RoomOptions roomconfiguration = new RoomOptions();
         roomconfiguration.MaxPlayers = 2;
         PhotonNetwork.CreateRoom(createInput.text, roomconfiguration);
+        PhotonNetwork.NickName = nicknameImput.text;
     }
     private void JoinNewRoom()
     {
         PhotonNetwork.JoinRoom(joinInput.text);
+        PhotonNetwork.NickName = nicknameImput.text;
     }
 
     public override void OnJoinedRoom()
