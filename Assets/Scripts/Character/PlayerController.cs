@@ -52,14 +52,12 @@ public class PlayerController : MonoBehaviourPun
 
     private void Start()
     {
-        
         lobbyObject = GameObject.Find("Lobby");
         if (lobbyObject == null)
         {
             Debug.LogError("Lobby object not found in the scene!");
         }
 
-        
         maps = GameObject.FindGameObjectsWithTag("Map");
         if (maps.Length == 0)
         {
@@ -88,7 +86,6 @@ public class PlayerController : MonoBehaviourPun
         horizontal = Input.GetAxisRaw("Horizontal");
         rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
 
-        
         photonView.RPC("SetAnimatorFloat", RpcTarget.All, "Speed", Mathf.Abs(horizontal));
 
         if (Input.GetButtonDown("Jump") && IsGrounded())
@@ -116,8 +113,7 @@ public class PlayerController : MonoBehaviourPun
         {
             isFacingRight = !isFacingRight;
 
-            
-            photonView.RPC("FlipNetwork", RpcTarget.AllBuffered, isFacingRight);
+            photonView.RPC("FlipNetwork", RpcTarget.All, isFacingRight);
         }
     }
 
@@ -129,7 +125,6 @@ public class PlayerController : MonoBehaviourPun
         localScale.x = facingRight ? Mathf.Abs(localScale.x) : -Mathf.Abs(localScale.x);
         transform.localScale = localScale;
     }
-
 
     private IEnumerator Dash()
     {
@@ -186,7 +181,7 @@ public class PlayerController : MonoBehaviourPun
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
         foreach (Collider2D enemy in hitEnemies)
         {
-            enemy.GetComponent<PhotonView>()?.RPC("TakeDamage", RpcTarget.AllBuffered, damage);
+            enemy.GetComponent<PhotonView>()?.RPC("TakeDamage", RpcTarget.All, damage);
             Debug.Log($"Hit {enemy.name} for {damage} damage");
         }
     }
@@ -232,7 +227,8 @@ public class PlayerController : MonoBehaviourPun
 
         if (currentHealth <= 0)
         {
-            photonView.RPC(nameof(Die), RpcTarget.AllBuffered);
+            PhotonNetwork.RemoveRPCs(photonView);
+            photonView.RPC(nameof(Die), RpcTarget.All);
         }
     }
 
@@ -253,7 +249,8 @@ public class PlayerController : MonoBehaviourPun
         Debug.Log($"Player {photonView.ViewID} has died.");
         gameObject.SetActive(false);
 
-        photonView.RPC(nameof(RespawnInLobby), RpcTarget.AllBuffered);
+        PhotonNetwork.RemoveRPCs(photonView);
+        photonView.RPC(nameof(RespawnInLobby), RpcTarget.All);
     }
 
     [PunRPC]
@@ -289,3 +286,6 @@ public class PlayerController : MonoBehaviourPun
         }
     }
 }
+
+
+
